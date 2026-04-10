@@ -45,11 +45,11 @@ def extract_text_from_pdf_plumber(pdf_path: str) -> str:
 
 
 def extract_text_from_pdf_ocr(pdf_path: str, dpi: int = 300) -> str:
-    """
-    Rasterise each PDF page and run Tesseract.
-    Used when pdfplumber returns no text (scanned PDFs).
-    """
-    images = convert_from_path(pdf_path, dpi=dpi)
+    images = convert_from_path(
+        pdf_path,
+        dpi=dpi,
+        poppler_path=settings.poppler_path  # ✅ use config
+    )
     return "\n".join(extract_text_from_image(img) for img in images).strip()
 
 

@@ -32,9 +32,16 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-1.5-pro"
 
     # ── Neo4j ────────────────────────────────────────────────
-    neo4j_uri: str = "bolt://localhost:7687"
-    neo4j_user: str = "neo4j"
+    neo4j_uri: str
+    neo4j_username: str   
     neo4j_password: str
+    neo4j_database: str   
+
+    # ── Aura (optional but you already use them in env) ───────
+    aura_instanceid: str
+    aura_instancename: str
+    POPPLER_PATH="C:\Program Files\poppler\poppler-25.12.0\Library\bin"
+    TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"
 
     # ── Storage ──────────────────────────────────────────────
     invoice_upload_dir: str = "./uploads/invoices"
