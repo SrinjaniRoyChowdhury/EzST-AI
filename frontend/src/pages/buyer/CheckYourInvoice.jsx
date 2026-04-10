@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import bgImage from "../../assets/background.jpeg";
 
 export default function CheckYourInvoice() {
   const navigate = useNavigate();
@@ -23,10 +24,10 @@ export default function CheckYourInvoice() {
       {/* Top Banner Section */}
       <div 
         className="relative w-full py-16 md:py-24 px-6 md:px-16 lg:px-32 bg-cover bg-center flex flex-col justify-end"
-        style={{ backgroundImage: "url(https://placehold.co/1280x308/101010/333333)" }}
+        style={{ backgroundImage: `url(${bgImage})` }}
       >
         {/* Dark overlay to assure contrast with white texts */}
-        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="absolute inset-0 bg-black/15"></div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-start gap-10 mt-6 lg:mt-12">
           <h1 className="text-white text-5xl md:text-[4rem] leading-none font-bold font-inter tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
