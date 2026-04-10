@@ -1,51 +1,57 @@
-/**
- * src/routes/AppRoutes.jsx
- * Updated to use ProtectedRoute for all dashboard pages.
- */
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import ProtectedRoute from '../components/ProtectedRoute';
+import SignIn from "../pages/auth/SignIn";
+import BuyerRegister from "../pages/auth/BuyerRegister";
+import SellerRegister from "../pages/auth/SellerRegister";
+import SellerLogin from "../pages/auth/SellerLogin";
 
-import Login from '../pages/auth/Login';
-import SellerDashboard from '../pages/seller/SellerDashboard';
-import UploadInvoice from '../pages/seller/UploadInvoice';
-import SentInvoices from '../pages/seller/SentInvoices';
-import BuyerDashboard from '../pages/buyer/BuyerDashboard';
-import ReceivedInvoices from '../pages/buyer/ReceivedInvoices';
-import InvoiceDetails from '../pages/buyer/InvoiceDetails';
+import SellerLayout from "../pages/seller/SellerLayout";
+import SellerDashboard from "../pages/seller/SellerDashboard";
+import UploadInvoice from "../pages/seller/UploadInvoice";
+import SentInvoices from "../pages/seller/SentInvoices";
+
+import BuyerLayout from "../pages/buyer/BuyerLayout";
+import BuyerDashboard from "../pages/buyer/BuyerDashboard";
+import ReceivedInvoices from "../pages/buyer/ReceivedInvoices";
+import InvoiceDetails from "../pages/buyer/InvoiceDetails";
+import CheckYourInvoice from "../pages/buyer/CheckYourInvoice";
+import SocialMediaInvoice from "../pages/buyer/SocialMediaInvoice";
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Default */}
-        <Route path="/" element={<Navigate to="/auth/login" />} />
+        {/* Default Route */}
+        <Route path="/" element={<Navigate to="/auth/buyer-signin" />} />
 
-        {/* Auth – public */}
-        <Route path="/auth/login" element={<Login />} />
+        {/* Auth */}
+        <Route path="/auth/login" element={<Navigate to="/auth/buyer-signin" />} />
+        <Route path="/auth/buyer-login" element={<Navigate to="/auth/buyer-signin" />} />
+        <Route path="/auth/seller-login" element={<Navigate to="/auth/seller-signin" />} />
+        
+        <Route path="/auth/buyer-signin" element={<SignIn />} />
+        <Route path="/auth/seller-signin" element={<SellerLogin />} />
+        
+        <Route path="/auth/buyer-register" element={<BuyerRegister />} />
+        <Route path="/auth/seller-register" element={<SellerRegister />} />
 
-        {/* Seller routes – only seller or both */}
-        <Route path="/seller" element={
-          <ProtectedRoute role="seller"><SellerDashboard /></ProtectedRoute>
-        } />
-        <Route path="/seller/upload" element={
-          <ProtectedRoute role="seller"><UploadInvoice /></ProtectedRoute>
-        } />
-        <Route path="/seller/invoices" element={
-          <ProtectedRoute role="seller"><SentInvoices /></ProtectedRoute>
-        } />
+        {/* Seller */}
+        <Route element={<SellerLayout />}>
+           <Route path="/seller" element={<SellerDashboard />} />
+           <Route path="/seller/upload" element={<UploadInvoice />} />
+           <Route path="/seller/invoices" element={<SentInvoices />} />
+        </Route>
 
-        {/* Buyer routes – only buyer or both */}
-        <Route path="/buyer" element={
-          <ProtectedRoute role="buyer"><BuyerDashboard /></ProtectedRoute>
-        } />
-        <Route path="/buyer/invoices" element={
-          <ProtectedRoute role="buyer"><ReceivedInvoices /></ProtectedRoute>
-        } />
-        <Route path="/buyer/invoice/:id" element={
-          <ProtectedRoute role="buyer"><InvoiceDetails /></ProtectedRoute>
-        } />
+        {/* Buyer */}
+        <Route element={<BuyerLayout />}>
+           <Route path="/buyer" element={<BuyerDashboard />} />
+           <Route path="/buyer/invoices" element={<ReceivedInvoices />} />
+           <Route path="/buyer/invoice/:id" element={<InvoiceDetails />} />
+           <Route path="/buyer/check-your-invoice" element={<CheckYourInvoice />} />
+           <Route path="/buyer/social-media-invoice" element={<SocialMediaInvoice />} />
+        </Route>
+        <Route path="/buyer/socila-media-invoice" element={<Navigate to="/buyer/social-media-invoice" replace />} />
 
       </Routes>
     </BrowserRouter>
