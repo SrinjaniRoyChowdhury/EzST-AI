@@ -1,0 +1,44 @@
+# ─── Web Framework ────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9
+
+# ─── Database ─────────────────────────────────────────────────
+supabase==2.4.3
+postgrest==0.16.1
+
+# ─── Graph Database ───────────────────────────────────────────
+neo4j==5.20.0
+
+# ─── AI / LLM ─────────────────────────────────────────────────
+google-generativeai==0.7.1   # ✅ FIXED (use this instead)
+faiss-cpu==1.8.0.post1
+sentence-transformers==3.0.1
+torch==2.2.2
+torchvision==0.17.2
+
+langchain==0.2.6
+langchain-community==0.2.6
+langchain-google-genai==1.0.7
+
+# ─── OCR ──────────────────────────────────────────────────────
+pytesseract==0.3.10
+Pillow==10.3.0
+pdf2image==1.17.0
+pdfplumber==0.11.0
+
+# ─── Auth / Security ──────────────────────────────────────────
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# ─── Validation / Utilities ───────────────────────────────────
+pydantic==2.7.3
+pydantic-settings==2.3.1
+python-dotenv==1.0.1
+httpx==0.25.2
+aiofiles==23.2.1
+numpy==1.26.4
+pandas==2.2.2
+
+# ─── Compatibility Fix (IMPORTANT) ─────────────────────────────
+websockets>=11,<13
