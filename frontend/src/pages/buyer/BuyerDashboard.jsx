@@ -95,7 +95,10 @@ export default function BuyerDashboard() {
          <div className="max-w-6xl w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
             
             {/* Feature 1 */}
-            <div className="flex flex-col items-center justify-center gap-6 group hover:-translate-y-2 transition-transform duration-300">
+            <div 
+              onClick={() => navigate('/buyer/chatbot')}
+              className="flex flex-col items-center justify-center gap-6 group hover:-translate-y-2 transition-transform duration-300 cursor-pointer"
+            >
                <div className="w-[80%] aspect-[252/148] rounded-[1rem] bg-white shadow-md relative overflow-hidden flex items-center justify-center border border-gray-100">
                   <img src={chatbot} className="w-full h-full object-cover" alt="Validate Invoice with AI" />
                </div>
