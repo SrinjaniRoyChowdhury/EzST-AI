@@ -4,11 +4,12 @@ graph/neo4j_client.py
 Neo4j driver initialisation and context manager helpers.
 All graph operations go through this module.
 """
-
+import os
 from contextlib import asynccontextmanager
 from functools import lru_cache
 from typing import Any, AsyncGenerator
-
+from dotenv import load_dotenv
+load_dotenv()
 from neo4j import AsyncGraphDatabase, AsyncDriver, AsyncSession
 from app.core.config import get_settings
 
@@ -20,22 +21,15 @@ def get_driver() -> AsyncDriver:
     """Return a cached async Neo4j driver instance."""
     return AsyncGraphDatabase.driver(
         settings.neo4j_uri,
-        auth=(settings.neo4j_user, settings.neo4j_password),
+        auth=(settings.neo4j_username, settings.neo4j_password),
         max_connection_pool_size=50,
     )
 
-
+print("Neo4j DB:", settings.neo4j_database)
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Async context manager that yields a Neo4j session.
-
-    Usage:
-        async with get_session() as session:
-            result = await session.run("MATCH (n) RETURN n LIMIT 5")
-    """
     driver = get_driver()
-    async with driver.session(database="neo4j") as session:
+    async with driver.session(database=settings.neo4j_database) as session:
         yield session
 
 

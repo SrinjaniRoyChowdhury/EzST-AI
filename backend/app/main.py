@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
     Run initialisation tasks before the server starts accepting requests,
     and clean-up tasks on shutdown.
     """
-    print("🚀 Starting AI-Powered GST Invoice Compliance System ...")
+    print("[START] Starting AI-Powered GST Invoice Compliance System ...")
 
     # Create upload directories
     os.makedirs(settings.invoice_upload_dir, exist_ok=True)
@@ -47,19 +47,19 @@ async def lifespan(app: FastAPI):
     try:
         await init_graph_schema()
     except Exception as e:
-        print(f"⚠️  Neo4j init warning: {e}")
+        print(f"[WARN]  Neo4j init warning: {e}")
 
     # Build / load FAISS RAG index
     try:
         build_index()
     except Exception as e:
-        print(f"⚠️  RAG index warning: {e}")
+        print(f"[WARN]  RAG index warning: {e}")
 
-    print("✅ All systems ready.")
+    print("[OK]    All systems ready.")
     yield
 
     # ── Shutdown ──────────────────────────────────────────────
-    print("👋 Shutting down …")
+    print("[STOP]  Shutting down ...")
     await close_driver()
 
 

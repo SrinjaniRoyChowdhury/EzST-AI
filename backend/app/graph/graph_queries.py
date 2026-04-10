@@ -56,19 +56,36 @@ async def create_invoice_relationship(
     grand_total: float,
     seller_gstin: str,
     buyer_gstin: str,
+    # GST knowledge-graph fields (from gst_calculator)
+    gst_type: str = "inter_state",
+    taxable_value: float = 0.0,
+    cgst: float = 0.0,
+    sgst: float = 0.0,
+    igst: float = 0.0,
+    status: str = "pending",
 ) -> None:
     """
     Create an Invoice node and link it to seller/buyer Business nodes.
     Graph model:
         (Seller:Business)-[:ISSUED]->(Invoice)-[:RECEIVED_BY]->(Buyer:Business)
         (Seller:Business)-[:TRANSACTS_WITH]->(Buyer:Business)
+
+    GST fields are stored on the Invoice node so graph queries can answer
+    tax-liability and compliance questions without hitting Supabase.
     """
     await run_query(
         """
         MERGE (inv:Invoice {id: $invoice_id})
         SET inv.invoice_number = $invoice_number,
             inv.invoice_date   = $invoice_date,
-            inv.grand_total    = $grand_total
+            inv.grand_total    = $grand_total,
+            inv.gst_type       = $gst_type,
+            inv.taxable_value  = $taxable_value,
+            inv.cgst           = $cgst,
+            inv.sgst           = $sgst,
+            inv.igst           = $igst,
+            inv.status         = $status,
+            inv.updated_at     = $now
 
         MERGE (seller:Business {gstin: $seller_gstin})
         MERGE (buyer:Business  {gstin: $buyer_gstin})
@@ -78,12 +95,38 @@ async def create_invoice_relationship(
         MERGE (seller)-[:TRANSACTS_WITH]->(buyer)
         """,
         {
-            "invoice_id": invoice_id,
+            "invoice_id":     invoice_id,
             "invoice_number": invoice_number,
-            "invoice_date": invoice_date,
-            "grand_total": grand_total,
-            "seller_gstin": seller_gstin,
-            "buyer_gstin": buyer_gstin,
+            "invoice_date":   invoice_date,
+            "grand_total":    grand_total,
+            "seller_gstin":   seller_gstin,
+            "buyer_gstin":    buyer_gstin,
+            "gst_type":       gst_type,
+            "taxable_value":  taxable_value,
+            "cgst":           cgst,
+            "sgst":           sgst,
+            "igst":           igst,
+            "status":         status,
+            "now":            datetime.utcnow().isoformat(),
+        },
+    )
+
+
+async def update_invoice_status_in_graph(invoice_id: str, status: str) -> None:
+    """
+    Sync buyer action (accepted / rejected / modified) back to the
+    Invoice node in Neo4j so graph queries reflect real-time state.
+    """
+    await run_query(
+        """
+        MATCH (inv:Invoice {id: $invoice_id})
+        SET inv.status     = $status,
+            inv.updated_at = $now
+        """,
+        {
+            "invoice_id": invoice_id,
+            "status":     status,
+            "now":        datetime.utcnow().isoformat(),
         },
     )
 

@@ -1,34 +1,51 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+/**
+ * src/routes/AppRoutes.jsx
+ * Updated to use ProtectedRoute for all dashboard pages.
+ */
 
-import Login from "../pages/auth/Login";
-import SellerDashboard from "../pages/seller/SellerDashboard";
-import UploadInvoice from "../pages/seller/UploadInvoice";
-import SentInvoices from "../pages/seller/SentInvoices";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from '../components/ProtectedRoute';
 
-import BuyerDashboard from "../pages/buyer/BuyerDashboard";
-import ReceivedInvoices from "../pages/buyer/ReceivedInvoices";
-import InvoiceDetails from "../pages/buyer/InvoiceDetails";
+import Login from '../pages/auth/Login';
+import SellerDashboard from '../pages/seller/SellerDashboard';
+import UploadInvoice from '../pages/seller/UploadInvoice';
+import SentInvoices from '../pages/seller/SentInvoices';
+import BuyerDashboard from '../pages/buyer/BuyerDashboard';
+import ReceivedInvoices from '../pages/buyer/ReceivedInvoices';
+import InvoiceDetails from '../pages/buyer/InvoiceDetails';
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* Default Route */}
+        {/* Default */}
         <Route path="/" element={<Navigate to="/auth/login" />} />
 
-        {/* Auth */}
+        {/* Auth – public */}
         <Route path="/auth/login" element={<Login />} />
 
-        {/* Seller */}
-        <Route path="/seller" element={<SellerDashboard />} />
-        <Route path="/seller/upload" element={<UploadInvoice />} />
-        <Route path="/seller/invoices" element={<SentInvoices />} />
+        {/* Seller routes – only seller or both */}
+        <Route path="/seller" element={
+          <ProtectedRoute role="seller"><SellerDashboard /></ProtectedRoute>
+        } />
+        <Route path="/seller/upload" element={
+          <ProtectedRoute role="seller"><UploadInvoice /></ProtectedRoute>
+        } />
+        <Route path="/seller/invoices" element={
+          <ProtectedRoute role="seller"><SentInvoices /></ProtectedRoute>
+        } />
 
-        {/* Buyer */}
-        <Route path="/buyer" element={<BuyerDashboard />} />
-        <Route path="/buyer/invoices" element={<ReceivedInvoices />} />
-        <Route path="/buyer/invoice/:id" element={<InvoiceDetails />} />
+        {/* Buyer routes – only buyer or both */}
+        <Route path="/buyer" element={
+          <ProtectedRoute role="buyer"><BuyerDashboard /></ProtectedRoute>
+        } />
+        <Route path="/buyer/invoices" element={
+          <ProtectedRoute role="buyer"><ReceivedInvoices /></ProtectedRoute>
+        } />
+        <Route path="/buyer/invoice/:id" element={
+          <ProtectedRoute role="buyer"><InvoiceDetails /></ProtectedRoute>
+        } />
 
       </Routes>
     </BrowserRouter>

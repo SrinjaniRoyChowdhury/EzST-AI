@@ -61,7 +61,8 @@ async def sign_up(payload: SignUpRequest):
             },
         })
     except Exception as e:
-        if "already registered" in str(e).lower():
+        err_msg = str(e).lower()
+        if "already registered" in err_msg or "duplicate" in err_msg:
             raise HTTPException(status_code=409, detail="Email already registered")
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -70,15 +71,19 @@ async def sign_up(payload: SignUpRequest):
 
     user_id = resp.user.id
 
-    # ✅ Create profile immediately (consistent table name)
-    await db_insert("user_profiles", {
-        "id": user_id,
-        "email": payload.email,
-        "full_name": payload.full_name,
-        "role": payload.role,
-        "is_active": True,
-        "created_at": datetime.utcnow().isoformat(),
-    })
+    # ✅ Upsert profile (handles re-signups / retries gracefully)
+    admin = get_supabase_admin()
+    try:
+        admin.table("user_profiles").upsert({
+            "id": user_id,
+            "email": payload.email,
+            "full_name": payload.full_name,
+            "role": payload.role,
+            "is_active": True,
+            "created_at": datetime.utcnow().isoformat(),
+        }).execute()
+    except Exception as e:
+        print(f"⚠️  user_profiles upsert warning: {e}")
 
     return AuthResponse(
         access_token=resp.session.access_token if resp.session else "",

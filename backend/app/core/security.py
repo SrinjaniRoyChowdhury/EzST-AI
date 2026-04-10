@@ -18,12 +18,18 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         
         if not user:
             raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # user.user_metadata is a dict from Supabase
+        metadata = user.user_metadata if isinstance(user.user_metadata, dict) else {}
             
         return {
             "sub": user.id,
             "email": user.email,
-            "role": getattr(user.user_metadata, 'get', lambda k, d=None: d)("role", "seller")
+            "role": metadata.get("role", "seller"),
+            "user_metadata": metadata,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"❌ Auth error: {str(e)}")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
