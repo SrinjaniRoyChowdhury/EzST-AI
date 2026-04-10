@@ -6,6 +6,7 @@ All values are read from environment variables / .env file.
 """
 
 from functools import lru_cache
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,26 +34,35 @@ class Settings(BaseSettings):
 
     # ── Neo4j ────────────────────────────────────────────────
     neo4j_uri: str
-    neo4j_username: str   
+    neo4j_username: str
     neo4j_password: str
-    neo4j_database: str   
+    neo4j_database: str
 
-    # ── Aura (optional but you already use them in env) ───────
-    aura_instanceid: str
-    aura_instancename: str
-    POPPLER_PATH="C:\Program Files\poppler\poppler-25.12.0\Library\bin"
-    TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"
+    # ── Neo4j Aura metadata (informational only) ─────────────
+    aura_instanceid: Optional[str] = None
+    aura_instancename: Optional[str] = None
+
+    # ── OCR — platform-aware paths ───────────────────────────
+    # Windows example: C:\Program Files\poppler\poppler-25.12.0\Library\bin
+    # Linux/Mac:       /usr/bin          (poppler is on PATH, leave as None)
+    poppler_path: Optional[str] = None
+
+    # Windows example: C:\Program Files\Tesseract-OCR\tesseract.exe
+    # Linux/Mac:       /usr/bin/tesseract
+    tesseract_cmd: str = "/usr/bin/tesseract"
 
     # ── Storage ──────────────────────────────────────────────
     invoice_upload_dir: str = "./uploads/invoices"
     faiss_index_path: str = "./data/faiss_index"
 
-    # ── OCR ──────────────────────────────────────────────────
-    tesseract_cmd: str = "/usr/bin/tesseract"
-
     @property
     def is_dev(self) -> bool:
         return self.app_env == "development"
+
+    @property
+    def is_windows(self) -> bool:
+        import platform
+        return platform.system() == "Windows"
 
 
 @lru_cache

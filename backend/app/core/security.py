@@ -1,69 +1,31 @@
-"""
-core/security.py
-────────────────
-Supabase JWT verification for FastAPI.
-Extracts and validates the Bearer token on every protected route.
-"""
-
-from typing import Optional
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Annotated
+from app.db.supabase_client import get_supabase_admin
 
-from app.core.config import get_settings
+security = HTTPBearer(auto_error=False)
 
-settings = get_settings()
-bearer_scheme = HTTPBearer(auto_error=False)
-
-
-def decode_supabase_jwt(token: str) -> dict:
-    """
-    Decode and verify a Supabase-issued JWT.
-    Supabase signs tokens with HS256 using the project JWT secret.
-    """
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    if not credentials or not credentials.credentials:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    token = credentials.credentials
+    supabase = get_supabase_admin()
+    
     try:
-        payload = jwt.decode(
-            token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-        return payload
-    except JWTError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid or expired token: {exc}",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        user_response = supabase.auth.get_user(token)
+        user = user_response.user
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+            
+        return {
+            "sub": user.id,
+            "email": user.email,
+            "role": getattr(user.user_metadata, 'get', lambda k, d=None: d)("role", "seller")
+        }
+    except Exception as e:
+        print(f"❌ Auth error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-
-async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-) -> dict:
-    """
-    FastAPI dependency – injects the decoded JWT payload as `current_user`.
-
-    Usage:
-        @router.get("/protected")
-        async def handler(user: dict = Depends(get_current_user)):
-            return {"user_id": user["sub"]}
-    """
-    if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return decode_supabase_jwt(credentials.credentials)
-
-
-async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
-) -> Optional[dict]:
-    """Same as get_current_user but returns None instead of raising for public endpoints."""
-    if credentials is None:
-        return None
-    try:
-        return decode_supabase_jwt(credentials.credentials)
-    except HTTPException:
-        return None
+CurrentUser = Annotated[dict, Depends(get_current_user)]
