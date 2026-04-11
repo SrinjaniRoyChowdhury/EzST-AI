@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import bgImage from "../../assets/background.jpeg";
+import invoice1 from "../../assets/invoice1.jpeg";
+import invoice2 from "../../assets/invoice2.jpeg";
+import invoice3 from "../../assets/invoice3.jpeg";
+import invoice4 from "../../assets/invoice4.jpeg";
+import invoice5 from "../../assets/invoice5.jpeg";
+import invoice6 from "../../assets/invoice6.jpeg";
+import Epsilon from "../../assets/EpsilonInvoice.png";
 
 export default function CheckYourInvoice() {
   const navigate = useNavigate();
@@ -9,12 +17,12 @@ export default function CheckYourInvoice() {
   const tabs = ["All", "Pending", "Rejected", "Completed"];
 
   const invoices = [
-    { title: "Social Media Invoice", date: "19/03/2025", img: "https://placehold.co/496x372", id: 1 },
-    { title: "Google Ads Campaign Invoice", date: "09/04/2025", img: "https://placehold.co/496x372", id: 2 },
-    { title: "Shoot Invoice", date: "29/04/2025", img: "https://placehold.co/496x372", id: 3 },
-    { title: "Facebook Ads Campaign Invoice", date: "07/05/2025", img: "https://placehold.co/496x372", id: 4 },
-    { title: "SEO Optimization Invoice", date: "02/07/2025", img: "https://placehold.co/496x372", id: 5 },
-    { title: "Content Creation Invoice", date: "08/08/2025", img: "https://placehold.co/496x372", id: 6 },
+    { title: "Social Media Invoice", date: "19/03/2025", img: Epsilon, id: 1 },
+    { title: "Google Ads Campaign Invoice", date: "09/04/2025", img: invoice2, id: 2 },
+    { title: "Shoot Invoice", date: "29/04/2025", img: invoice3, id: 3 },
+    { title: "Facebook Ads Campaign Invoice", date: "07/05/2025", img: invoice4, id: 4 },
+    { title: "SEO Optimization Invoice", date: "02/07/2025", img: invoice5, id: 5 },
+    { title: "Content Creation Invoice", date: "08/08/2025", img: invoice6, id: 6 },
   ];
 
   return (
@@ -23,10 +31,10 @@ export default function CheckYourInvoice() {
       {/* Top Banner Section */}
       <div 
         className="relative w-full py-16 md:py-24 px-6 md:px-16 lg:px-32 bg-cover bg-center flex flex-col justify-end"
-        style={{ backgroundImage: "url(https://placehold.co/1280x308/101010/333333)" }}
+        style={{ backgroundImage: `url(${bgImage})` }}
       >
         {/* Dark overlay to assure contrast with white texts */}
-        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="absolute inset-0 bg-black/15"></div>
 
         <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col items-start gap-10 mt-6 lg:mt-12">
           <h1 className="text-white text-5xl md:text-[4rem] leading-none font-bold font-inter tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">

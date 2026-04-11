@@ -1,3 +1,5 @@
+import bgImage from "../../assets/background.jpeg";
+
 export default function UploadInvoice() {
   return (
     <div className="w-full min-h-screen relative bg-white flex flex-col items-center justify-center font-sans overflow-hidden">
@@ -5,7 +7,7 @@ export default function UploadInvoice() {
       {/* Background Image Container mapped to 1346x782 placement */}
       <div 
          className="absolute inset-0 z-0 bg-cover bg-center"
-         style={{ backgroundImage: 'url(https://placehold.co/1920x1080/f8f8f8/e5e5e5)' }}
+         style={{ backgroundImage: `url(${bgImage})` }}
       ></div>
 
       {/* Floating Upload Widget - Box mapped to 508x330 measurements */}
@@ -20,15 +22,25 @@ export default function UploadInvoice() {
 
          {/* Action Buttons mapped from absolute positions */}
          <div className="w-full flex justify-center items-center gap-4 flex-wrap">
-            <button 
-               className="flex-1 min-w-[210px] bg-[#D50000] text-white py-[14px] px-4 rounded-xl font-extrabold text-[1.15rem] shadow-[0_4px_10px_rgba(213,0,0,0.15)] hover:bg-[#b00116] hover:shadow-[0_6px_15px_rgba(213,0,0,0.25)] transition-all duration-200 active:scale-[0.98] flex justify-center items-center"
+            <label 
+               className="flex-1 min-w-[210px] whitespace-nowrap text-center cursor-pointer bg-[#D50000] text-white py-[14px] px-4 rounded-xl font-bold text-[1.15rem] shadow-[0_4px_10px_rgba(213,0,0,0.15)] hover:bg-[#b00116] hover:shadow-[0_6px_15px_rgba(213,0,0,0.25)] transition-all duration-200 active:scale-[0.98] flex justify-center items-center"
             >
-               Upload From Device
-            </button>
+               <span>Upload From Device</span>
+               <input 
+                 type="file" 
+                 className="hidden" 
+                 onChange={(e) => {
+                   if (e.target.files && e.target.files.length > 0) {
+                     alert("File ready for upload: " + e.target.files[0].name);
+                   }
+                 }} 
+               />
+            </label>
             <button 
-               className="flex-1 min-w-[210px] bg-transparent text-[#D50000] py-[14px] px-4 rounded-xl font-extrabold text-[1.15rem] border-[2px] border-[#D50000] hover:bg-[#D50000]/5 hover:shadow-[0_4px_10px_rgba(0,0,0,0.05)] transition-all duration-200 active:scale-[0.98] flex justify-center items-center"
+               onClick={() => alert("Connecting to Cloud Drives...")}
+               className="flex-1 min-w-[210px] whitespace-nowrap text-center bg-transparent text-[#D50000] py-[14px] px-4 rounded-xl font-extrabold text-[1.15rem] border-[2px] border-[#D50000] hover:bg-[#D50000]/5 hover:shadow-[0_4px_10px_rgba(0,0,0,0.05)] transition-all duration-200 active:scale-[0.98] flex justify-center items-center"
             >
-               Upload From Drive
+               <span>Upload From Drive</span>
             </button>
          </div>
       </div>
