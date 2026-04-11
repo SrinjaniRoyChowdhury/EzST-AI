@@ -41,6 +41,7 @@ CurrentUser = Annotated[dict, Depends(get_current_user)]
 @router.post("/upload", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_invoice(
     file: UploadFile = File(..., description="Invoice PDF or image"),
+    buyer_gstin: str = Form(None, description="Manually entered Buyer ID (GSTIN)"),
     current_user: CurrentUser = None,
 ):
     """
@@ -61,19 +62,22 @@ async def upload_invoice(
                             detail="File size exceeds 10 MB limit")
 
     seller_id: str = current_user["sub"]
-    upload_result = await process_invoice_upload(file_bytes, file.filename, seller_id)
+    upload_result = await process_invoice_upload(file_bytes, file.filename, seller_id, buyer_gstin)
 
-    # Create graph relationship if extraction succeeded
+    # Create graph relationship if extraction succeeded (non-blocking)
     extracted = upload_result.extracted_data
     if extracted.get("seller_gstin") and extracted.get("buyer_gstin"):
-        await create_invoice_relationship(
-            invoice_id=upload_result.invoice_id,
-            invoice_number=extracted.get("invoice_number", "UNKNOWN"),
-            invoice_date=extracted.get("invoice_date", ""),
-            grand_total=float(extracted.get("grand_total") or 0),
-            seller_gstin=extracted["seller_gstin"],
-            buyer_gstin=extracted["buyer_gstin"],
-        )
+        try:
+            await create_invoice_relationship(
+                invoice_id=upload_result.invoice_id,
+                invoice_number=extracted.get("invoice_number", "UNKNOWN"),
+                invoice_date=extracted.get("invoice_date", ""),
+                grand_total=float(extracted.get("grand_total") or 0),
+                seller_gstin=extracted["seller_gstin"],
+                buyer_gstin=extracted["buyer_gstin"],
+            )
+        except Exception as e:
+            print(f"⚠️  Graph update skipped: {e}")
 
     return upload_result
 

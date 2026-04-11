@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import bgImage from "../../assets/background.jpeg";
+import whitebgImage from "../../assets/whitebackground.jpeg";
 
 export default function SellerDashboard() {
   const navigate = useNavigate();
@@ -9,7 +11,7 @@ export default function SellerDashboard() {
       {/* 1. Hero Section */}
       <div 
         className="w-full flex flex-col items-center pt-28 md:pt-36 pb-56 md:pb-64 px-6 sm:px-16 bg-cover bg-center"
-        style={{ backgroundImage: 'url(https://placehold.co/1920x800/fdfdfd/eeeeee)' }}
+        style={{ backgroundImage: `url(${whitebgImage})` }}
       >
         <div className="flex flex-col items-center gap-10 max-w-4xl w-full z-10 relative">
            
@@ -90,7 +92,7 @@ export default function SellerDashboard() {
       {/* Cleared Invoices Section */}
       <div 
         className="w-full flex flex-col items-center pt-24 pb-32 px-6 sm:px-16 bg-cover bg-center"
-        style={{ backgroundImage: 'url(https://placehold.co/1920x1200/fcfcfc/f4f4f4)' }}
+        style={{ backgroundImage: `url(${bgImage})` }}
       >
         <h2 className="text-[#D50000] text-5xl md:text-6xl font-bold font-inter text-center mb-16 drop-shadow-sm">
             Cleared Invoices

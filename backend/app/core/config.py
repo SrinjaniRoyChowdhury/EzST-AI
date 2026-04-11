@@ -6,6 +6,7 @@ All values are read from environment variables / .env file.
 """
 
 from functools import lru_cache
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,6 +15,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",  # Ignore any unrecognised env vars
     )
 
     # ── App ──────────────────────────────────────────────────
@@ -27,32 +29,36 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     supabase_jwt_secret: str
 
-    # ── Gemini ───────────────────────────────────────────────
-    gemini_api_key: str
-    gemini_model: str = "gemini-1.5-pro"
+    # ── Groq ─────────────────────────────────────────────────
+    groq_api_key: str
+    groq_model: str = "llama-3.3-70b-versatile"
 
     # ── Neo4j ────────────────────────────────────────────────
     neo4j_uri: str
-    neo4j_username: str   
+    neo4j_username: str
     neo4j_password: str
-    neo4j_database: str   
+    neo4j_database: str
 
-    # ── Aura (optional but you already use them in env) ───────
-    aura_instanceid: str
-    aura_instancename: str
-    POPPLER_PATH="C:\Program Files\poppler\poppler-25.12.0\Library\bin"
-    TESSERACT_CMD="C:\Program Files\Tesseract-OCR\tesseract.exe"
+    # ── Neo4j Aura (optional) ─────────────────────────────────
+    aura_instanceid: Optional[str] = None
+    aura_instancename: Optional[str] = None
+
+    # ── OCR ──────────────────────────────────────────────────
+    tesseract_cmd: str = "C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+    poppler_path: Optional[str] = "C:\\Program Files\\poppler\\poppler-25.12.0\\Library\\bin"
 
     # ── Storage ──────────────────────────────────────────────
     invoice_upload_dir: str = "./uploads/invoices"
     faiss_index_path: str = "./data/faiss_index"
 
-    # ── OCR ──────────────────────────────────────────────────
-    tesseract_cmd: str = "/usr/bin/tesseract"
-
     @property
     def is_dev(self) -> bool:
         return self.app_env == "development"
+
+    @property
+    def is_windows(self) -> bool:
+        import platform
+        return platform.system() == "Windows"
 
 
 @lru_cache

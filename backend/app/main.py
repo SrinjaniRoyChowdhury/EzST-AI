@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.graph.neo4j_client import init_graph_schema, close_driver
@@ -42,6 +43,8 @@ async def lifespan(app: FastAPI):
     # Create upload directories
     os.makedirs(settings.invoice_upload_dir, exist_ok=True)
     os.makedirs(os.path.dirname(settings.faiss_index_path), exist_ok=True)
+
+    # Mount static files folder dynamically later, or just ensure the folder exists.
 
     # Initialise Neo4j schema
     try:
@@ -95,6 +98,11 @@ app.add_middleware(
 app.include_router(auth_routes.router)
 app.include_router(invoice_routes.router)
 app.include_router(gst_routes.router)
+
+# Mount local uploads for testing/demo
+_upload_dir = os.path.abspath(settings.invoice_upload_dir)
+os.makedirs(_upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_upload_dir), name="uploads")
 
 
 # ── Health Check ──────────────────────────────────────────────

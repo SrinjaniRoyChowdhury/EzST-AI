@@ -16,6 +16,7 @@ import ReceivedInvoices from "../pages/buyer/ReceivedInvoices";
 import InvoiceDetails from "../pages/buyer/InvoiceDetails";
 import CheckYourInvoice from "../pages/buyer/CheckYourInvoice";
 import SocialMediaInvoice from "../pages/buyer/SocialMediaInvoice";
+import Chatbot from "../pages/buyer/Chatbot";
 
 export default function AppRoutes() {
   return (
@@ -50,6 +51,7 @@ export default function AppRoutes() {
            <Route path="/buyer/invoice/:id" element={<InvoiceDetails />} />
            <Route path="/buyer/check-your-invoice" element={<CheckYourInvoice />} />
            <Route path="/buyer/social-media-invoice" element={<SocialMediaInvoice />} />
+           <Route path="/buyer/chatbot" element={<Chatbot />} />
         </Route>
         <Route path="/buyer/socila-media-invoice" element={<Navigate to="/buyer/social-media-invoice" replace />} />
 

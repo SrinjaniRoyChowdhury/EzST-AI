@@ -4,7 +4,7 @@ export default function Navbar({ role, links }) {
   const location = useLocation();
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white/30 backdrop-blur-md border-b border-white/20 shadow-sm">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-black/40 backdrop-blur-md border-b border-black/20 shadow-md">
        <div className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
           
           <div className="flex items-center gap-8 md:gap-12">
