@@ -3,16 +3,18 @@ api/routes/invoice_routes.py
 ──────────────────────────────
 Invoice API: upload, share, accept/reject/modify, payment tracking.
 
-Security fixes vs original:
-  • /buyer/received — GSTIN derived from JWT, not a query param
-  • /status PATCH    — enforces buyer ownership (invoice.buyer_id == JWT sub)
-  • /share POST      — uses SellerUser dependency; triggers buyer_id resolution
-  • /modify POST     — new dedicated endpoint for buyer modification suggestions
+Key fixes vs original:
+  • CurrentUser / SellerUser / BuyerUser are Annotated types with Depends baked in
+  • No duplicate Depends() in default values — just use = None
+  • /share POST accepts ShareInvoicePayload (buyer_email / buyer_gstin)
+  • /buyer/received returns all statuses, not just SHARED
+  • /modify POST dedicated endpoint for buyer modification suggestions
+  • invoice_analyzer imports from groq_client
 """
 
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from app.api.dependencies import BuyerUser, SellerUser, CurrentUser
 from app.schemas.invoice import (
@@ -25,6 +27,7 @@ from app.schemas.invoice import (
     UploadResponse,
 )
 from app.services.invoice_service import (
+    ShareInvoicePayload,
     get_invoice_by_id,
     get_invoices_by_seller,
     get_invoices_for_buyer,
@@ -53,8 +56,11 @@ async def upload_invoice(
     """
     Seller uploads an invoice PDF/image.
 
-    Pipeline: Save to Supabase Storage → OCR → Gemini extraction
+    Pipeline: Save to Supabase Storage → OCR → Groq extraction
               → Server-side GST calculation → Validation → Supabase DB + Neo4j
+
+    NOTE: CurrentUser is Annotated[dict, Depends(get_current_user)] — auth is
+          enforced by the dependency itself, not by the = None default.
     """
     ALLOWED_TYPES = {"application/pdf", "image/png", "image/jpeg", "image/tiff", "image/webp"}
     if file.content_type not in ALLOWED_TYPES:
@@ -86,7 +92,6 @@ async def upload_invoice(
             grand_total=float(extracted.get("grand_total") or 0),
             seller_gstin=extracted["seller_gstin"],
             buyer_gstin=extracted["buyer_gstin"],
-            # GST enrichment (from server-side calculation)
             gst_type=gst.gst_type if gst else "inter_state",
             taxable_value=gst.taxable_value if gst else 0.0,
             cgst=gst.total_cgst if gst else 0.0,
@@ -100,19 +105,30 @@ async def upload_invoice(
 # ── Seller: Share Invoice ──────────────────────────────────────
 
 @router.post("/{invoice_id}/share", status_code=status.HTTP_200_OK)
-async def share_invoice(invoice_id: str, current_user: SellerUser = None):
+async def share_invoice(
+    invoice_id: str,
+    payload: ShareInvoicePayload,
+    current_user: SellerUser = None,
+):
     """
-    Seller shares invoice with the buyer (status → shared).
-    Automatically resolves buyer_id from buyer_gstin via user_profiles → businesses.
+    Seller shares invoice with a buyer.
+
+    Provide buyer_email (preferred) or buyer_gstin in the request body.
+    If neither resolves to a registered user, invoice is still shared and
+    the buyer can claim it later via their GSTIN.
+
+    Example payload:
+        {"buyer_email": "buyer@company.com"}
+        {"buyer_gstin": "27ABCDE1234F1Z5"}
     """
     seller_id: str = current_user["sub"]
-    updated = await share_invoice_with_buyer(invoice_id, seller_id)
+    updated = await share_invoice_with_buyer(invoice_id, seller_id, payload)
     if not updated:
         raise HTTPException(status_code=404, detail="Invoice not found or not owned by you")
     return {"message": "Invoice shared successfully", "invoice_id": invoice_id}
 
 
-# ── Buyer: Accept / Reject ────────────────────────────────────
+# ── Buyer: Accept / Reject ─────────────────────────────────────
 
 @router.patch("/{invoice_id}/status", status_code=status.HTTP_200_OK)
 async def update_status(
@@ -124,6 +140,10 @@ async def update_status(
     Buyer updates invoice status: accepted | rejected.
     For modification suggestions, use POST /{invoice_id}/modify instead.
     Ownership enforced: invoice.buyer_id must match JWT sub.
+
+    Example payload:
+        {"status": "accepted", "reason": "All details correct"}
+        {"status": "rejected", "reason": "Wrong billing address"}
     """
     buyer_id: str = current_user["sub"]
     try:
@@ -160,8 +180,10 @@ async def suggest_modification(
     """
     Buyer submits field-level modification suggestions.
     Stores to invoice_modifications table and sets invoice status → modified.
+
     Example payload:
         {"suggested_changes": {"grand_total": 15000}, "reason": "Tax rate mismatch"}
+        {"suggested_changes": {"buyer_gstin": "27XXXXX"}, "reason": "Wrong GSTIN used"}
     """
     buyer_id: str = current_user["sub"]
     try:
@@ -196,7 +218,10 @@ async def suggest_modification(
 # ── Validation ─────────────────────────────────────────────────
 
 @router.post("/{invoice_id}/validate")
-async def validate_invoice(invoice_id: str, current_user: CurrentUser = None):
+async def validate_invoice(
+    invoice_id: str,
+    current_user: CurrentUser = None,
+):
     """Re-run the validator agent on an existing invoice."""
     invoice = await get_invoice_by_id(invoice_id)
     if not invoice:
@@ -218,7 +243,7 @@ async def list_seller_invoices(current_user: SellerUser = None):
 @router.get("/buyer/received")
 async def list_buyer_invoices(current_user: BuyerUser = None):
     """
-    Buyer lists all invoices shared with them.
+    Buyer lists all invoices shared with them (all statuses).
     GSTIN is derived from the JWT (via user_metadata.gstin) — not a query param.
     Falls back to buyer_id match if GSTIN is not in token metadata.
     """
@@ -226,17 +251,18 @@ async def list_buyer_invoices(current_user: BuyerUser = None):
     gstin: str = current_user.get("user_metadata", {}).get("gstin", "")
 
     if gstin:
-        # Prefer GSTIN-based lookup (works even before buyer_id is resolved)
         invoices = await get_invoices_for_buyer_by_gstin(gstin)
         if invoices:
             return invoices
 
-    # Fallback: use buyer_id (set during share flow)
     return await get_invoices_for_buyer(buyer_id)
 
 
 @router.get("/{invoice_id}")
-async def get_invoice(invoice_id: str, current_user: CurrentUser = None):
+async def get_invoice(
+    invoice_id: str,
+    current_user: CurrentUser = None,
+):
     """Get a single invoice by ID."""
     invoice = await get_invoice_by_id(invoice_id)
     if not invoice:
@@ -245,7 +271,10 @@ async def get_invoice(invoice_id: str, current_user: CurrentUser = None):
 
 
 @router.get("/{invoice_id}/download-url")
-async def get_invoice_download_url(invoice_id: str, current_user: CurrentUser = None):
+async def get_invoice_download_url(
+    invoice_id: str,
+    current_user: CurrentUser = None,
+):
     """
     Generate a signed URL (1-hour TTL) for downloading the invoice file
     from Supabase Storage.
@@ -275,14 +304,14 @@ async def request_missing_invoice(
     from datetime import datetime
 
     record = {
-        "id":                       str(uuid.uuid4()),
-        "buyer_id":                 current_user["sub"],
-        "seller_gstin":             payload.seller_gstin,
-        "expected_invoice_number":  payload.expected_invoice_number,
-        "period":                   payload.period,
-        "description":              payload.description,
-        "status":                   "pending",
-        "created_at":               datetime.utcnow().isoformat(),
+        "id":                      str(uuid.uuid4()),
+        "buyer_id":                current_user["sub"],
+        "seller_gstin":            payload.seller_gstin,
+        "expected_invoice_number": payload.expected_invoice_number,
+        "period":                  payload.period,
+        "description":             payload.description,
+        "status":                  "pending",
+        "created_at":              datetime.utcnow().isoformat(),
     }
     await db_insert("missing_invoice_requests", record)
     return {"message": "Missing invoice request submitted", "request_id": record["id"]}
@@ -300,7 +329,10 @@ async def record_payment_endpoint(
 
 
 @router.get("/{invoice_id}/payments")
-async def get_payments(invoice_id: str, current_user: CurrentUser = None):
+async def get_payments(
+    invoice_id: str,
+    current_user: CurrentUser = None,
+):
     """Get payment history and balance for an invoice."""
     return await get_payment_summary(invoice_id)
 

@@ -1,7 +1,7 @@
 """
-services/gemini_client.py
+services/groq_client.py
 ─────────────────────────
-Thin wrapper around the Google Generative AI (Gemini) SDK.
+Thin wrapper around the Groq SDK.
 Provides async helpers for text generation and JSON extraction.
 """
 
@@ -10,7 +10,7 @@ import re
 from functools import lru_cache
 from typing import Any, Optional
 
-import google.generativeai as genai
+from groq import Groq
 
 from app.core.config import get_settings
 
@@ -18,9 +18,8 @@ settings = get_settings()
 
 
 @lru_cache
-def get_client():
-    genai.configure(api_key=settings.gemini_api_key)
-    return genai
+def get_client() -> Groq:
+    return Groq(api_key=settings.groq_api_key)
 
 
 async def generate_text(
@@ -30,25 +29,23 @@ async def generate_text(
     max_output_tokens: int = 2048,
 ) -> str:
     """
-    Send a prompt to Gemini and return the raw text response.
+    Send a prompt to Groq and return the raw text response.
     """
     client = get_client()
 
-    model = client.GenerativeModel(settings.gemini_model)
-
-    full_prompt = prompt
+    messages = []
     if system_instruction:
-        full_prompt = f"{system_instruction}\n\n{prompt}"
+        messages.append({"role": "system", "content": system_instruction})
+    messages.append({"role": "user", "content": prompt})
 
-    response = model.generate_content(
-        full_prompt,
-        generation_config={
-            "temperature": temperature,
-            "max_output_tokens": max_output_tokens,
-        },
+    response = client.chat.completions.create(
+        model=settings.groq_model,
+        messages=messages,
+        temperature=temperature,
+        max_tokens=max_output_tokens,
     )
 
-    return response.text.strip()
+    return response.choices[0].message.content.strip()
 
 
 async def generate_json(
@@ -56,7 +53,7 @@ async def generate_json(
     system_instruction: Optional[str] = None,
 ) -> dict[str, Any]:
     """
-    Ask Gemini to return a JSON object and parse it safely.
+    Ask Groq to return a JSON object and parse it safely.
     """
     full_system = (
         (system_instruction or "")
@@ -84,17 +81,18 @@ async def chat(
     """
     client = get_client()
 
-    model = client.GenerativeModel(settings.gemini_model)
-
-    conversation = ""
+    groq_messages = []
     if system_instruction:
-        conversation += f"{system_instruction}\n\n"
+        groq_messages.append({"role": "system", "content": system_instruction})
 
     for msg in messages:
-        role = msg["role"]
+        role = msg["role"]  # expects "user" or "assistant"
         text = msg["parts"][0]
-        conversation += f"{role.upper()}: {text}\n"
+        groq_messages.append({"role": role, "content": text})
 
-    response = model.generate_content(conversation)
+    response = client.chat.completions.create(
+        model=settings.groq_model,
+        messages=groq_messages,
+    )
 
-    return response.text.strip()
+    return response.choices[0].message.content.strip()

@@ -4,17 +4,18 @@ services/invoice_service.py
 Orchestrates the full invoice lifecycle:
 Upload → OCR → AI extraction → GST Calculation → Validation → DB store → Share → Track
 
-Key changes vs original:
-  • Files saved to Supabase Storage (private "invoices" bucket), not local disk
-  • GST is calculated server-side via gst_calculator.py (state-code based logic)
-  • share_invoice_with_buyer resolves buyer_id via user_profiles → businesses join
-  • update_invoice_status enforces buyer_id ownership
-  • get_invoices_for_buyer uses user_id (from JWT) not a raw GSTIN param
+Key changes:
+  • share_invoice_with_buyer now accepts ShareInvoicePayload (buyer_email / buyer_gstin)
+  • resolve_buyer_id_by_email added for email-based buyer lookup
+  • get_invoices_for_buyer returns ALL statuses (not just SHARED)
+  • invoice_analyzer now imports from groq_client
 """
 
 import uuid
 from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.db.supabase_client import db_insert, db_select, db_update, get_supabase_admin
@@ -37,7 +38,14 @@ PAYMENTS_TABLE = "payments"
 MODIFICATIONS_TABLE = "invoice_modifications"
 
 
-# ── Upload & Process ─────────────────────────────────────────
+# ── Pydantic model for share payload ─────────────────────────
+
+class ShareInvoicePayload(BaseModel):
+    buyer_email: Optional[str] = None   # Preferred — resolves buyer_id directly
+    buyer_gstin: Optional[str] = None   # Fallback — matches via businesses table
+
+
+# ── Upload & Process ──────────────────────────────────────────
 
 async def process_invoice_upload(
     file_bytes: bytes,
@@ -48,9 +56,9 @@ async def process_invoice_upload(
     Full pipeline:
       1. Upload file to Supabase Storage
       2. OCR (pdfplumber → Tesseract fallback)
-      3. Gemini structured extraction
+      3. Groq structured extraction
       4. Server-side GST calculation (intra/inter-state)
-      5. Gemini validation
+      5. Groq validation
       6. Persist to Supabase (invoices table)
 
     Returns UploadResponse with invoice_id, gst_breakdown, and validation info.
@@ -80,9 +88,11 @@ async def process_invoice_upload(
             gst_breakdown_schema = None  # Don't fail upload if schema parse fails
 
     # ── 5. Validate extracted data ───────────────────────────
-    validation_result = await validate_invoice_data(extracted_data) if extracted_data else {
-        "is_valid": False, "confidence_score": 0.0, "issues": []
-    }
+    validation_result = (
+        await validate_invoice_data(extracted_data)
+        if extracted_data
+        else {"is_valid": False, "confidence_score": 0.0, "issues": []}
+    )
 
     issues = [
         f"[{i.get('severity', 'warn').upper()}] {i.get('field')}: {i.get('message')}"
@@ -90,13 +100,13 @@ async def process_invoice_upload(
     ]
 
     # ── 6. Persist to Supabase ───────────────────────────────
-    # Use calculated grand_total from our engine (overrides Gemini's value)
+    # Use calculated grand_total from our engine (overrides AI extracted value)
     calc_grand_total = gst_breakdown_dict.get("grand_total") or extracted_data.get("grand_total")
 
     record = {
         "id":                 invoice_id,
         "seller_id":          seller_id,
-        "file_url":           storage_path,       # Supabase Storage path
+        "file_url":           storage_path,
         "raw_ocr_text":       raw_text,
         "ai_extracted_data":  extracted_data,
         "gst_breakdown":      gst_breakdown_dict,
@@ -130,17 +140,39 @@ async def process_invoice_upload(
 
 # ── Buyer Resolution ──────────────────────────────────────────
 
-async def resolve_buyer_id_by_gstin(buyer_gstin: str) -> Optional[str]:
+async def resolve_buyer_id_by_email(email: str) -> Optional[str]:
     """
-    Look up the buyer's user_profiles.id by matching their GSTIN via
-    the businesses table join:
-        user_profiles.business_id → businesses.id → businesses.gstin
-
-    Returns user_profiles.id (a UUID string) or None if not found.
+    Look up user_profiles.id by email address.
+    This is the most reliable resolution method when the buyer is registered.
     """
     client = get_supabase_admin()
     try:
-        # Join user_profiles → businesses to find the user with this GSTIN
+        response = (
+            client
+            .table("user_profiles")
+            .select("id")
+            .eq("email", email)
+            .limit(1)
+            .execute()
+        )
+        data = response.data or []
+        if data:
+            return data[0]["id"]
+    except Exception as e:
+        print(f"⚠️  Could not resolve buyer_id for email {email}: {e}")
+    return None
+
+
+async def resolve_buyer_id_by_gstin(buyer_gstin: str) -> Optional[str]:
+    """
+    Look up buyer's user_profiles.id by matching their GSTIN via
+    the businesses table join:
+        user_profiles.business_id → businesses.id → businesses.gstin
+
+    Returns user_profiles.id (UUID string) or None if not found.
+    """
+    client = get_supabase_admin()
+    try:
         response = (
             client
             .table("user_profiles")
@@ -159,21 +191,50 @@ async def resolve_buyer_id_by_gstin(buyer_gstin: str) -> Optional[str]:
 
 # ── Sharing ───────────────────────────────────────────────────
 
-async def share_invoice_with_buyer(invoice_id: str, seller_id: str) -> dict:
+async def share_invoice_with_buyer(
+    invoice_id: str,
+    seller_id: str,
+    payload: ShareInvoicePayload,
+) -> dict:
     """
-    Mark invoice as shared with buyer.
-    Resolves buyer_id from buyer_gstin via user_profiles → businesses.
+    Mark invoice as shared with the buyer.
+
+    Resolution priority:
+      1. buyer_email  → direct user_profiles lookup (most reliable)
+      2. buyer_gstin  → user_profiles → businesses join
+      3. buyer_gstin  from extracted invoice data (fallback)
+      4. None         → invoice shared without buyer_id (buyer can claim later via GSTIN)
+
     Raises ValueError if invoice not found or not owned by seller.
     """
-    # Fetch invoice to get buyer_gstin
     invoice = await get_invoice_by_id(invoice_id)
     if not invoice or invoice.get("seller_id") != seller_id:
-        return {}   # Caller will raise 404
+        return {}   # Caller raises 404
 
-    buyer_gstin = invoice.get("buyer_gstin")
-    buyer_id = None
-    if buyer_gstin:
-        buyer_id = await resolve_buyer_id_by_gstin(buyer_gstin)
+    buyer_id: Optional[str] = None
+
+    # 1. Try email resolution first (most reliable)
+    if payload.buyer_email:
+        buyer_id = await resolve_buyer_id_by_email(payload.buyer_email)
+        if not buyer_id:
+            print(f"⚠️  No user found with email {payload.buyer_email}")
+
+    # 2. Try GSTIN from payload
+    if not buyer_id and payload.buyer_gstin:
+        buyer_id = await resolve_buyer_id_by_gstin(payload.buyer_gstin)
+
+    # 3. Fallback to GSTIN extracted from the invoice itself
+    if not buyer_id:
+        extracted_gstin = invoice.get("buyer_gstin")
+        if extracted_gstin:
+            buyer_id = await resolve_buyer_id_by_gstin(extracted_gstin)
+
+    # 4. Warn but don't block — buyer can claim later
+    if not buyer_id:
+        print(
+            f"⚠️  Buyer not found on platform — invoice {invoice_id} shared without buyer_id. "
+            f"Buyer can claim it later via GSTIN match."
+        )
 
     update_data: dict = {
         "status":    InvoiceStatus.SHARED,
@@ -197,9 +258,10 @@ async def update_invoice_status(
     update: InvoiceStatusUpdate,
 ) -> dict:
     """
-    Buyer accepts, rejects, or requests modification.
-    Enforcement: the invoice must have buyer_id == buyer_user_id,
-    and its current status must be 'shared'.
+    Buyer accepts or rejects the invoice.
+    Enforcement:
+      - Invoice must exist and have status = 'shared'
+      - If buyer_id is set on the invoice, it must match the JWT sub
     """
     invoice = await get_invoice_by_id(invoice_id)
     if not invoice:
@@ -212,7 +274,9 @@ async def update_invoice_status(
 
     # Status guard: can only act on a shared invoice
     if invoice.get("status") != InvoiceStatus.SHARED:
-        raise ValueError(f"Invoice is not in 'shared' state (current: {invoice.get('status')})")
+        raise ValueError(
+            f"Invoice is not in 'shared' state (current: {invoice.get('status')})"
+        )
 
     return await db_update(
         TABLE,
@@ -220,7 +284,7 @@ async def update_invoice_status(
         data={
             "status":              update.status,
             "buyer_action_reason": update.reason,
-            "buyer_id":            buyer_user_id,   # Ensure buyer_id is set
+            "buyer_id":            buyer_user_id,   # Ensure buyer_id is stamped
             "buyer_actioned_at":   datetime.utcnow().isoformat(),
         },
     )
@@ -234,6 +298,7 @@ async def request_modification(
 ) -> dict:
     """
     Store a buyer modification suggestion and flip invoice status to 'modified'.
+    Saves a record in invoice_modifications table for seller to review.
     """
     invoice = await get_invoice_by_id(invoice_id)
     if not invoice:
@@ -245,21 +310,23 @@ async def request_modification(
         raise PermissionError("You are not the designated buyer for this invoice")
 
     if invoice.get("status") != InvoiceStatus.SHARED:
-        raise ValueError(f"Invoice is not in 'shared' state (current: {invoice.get('status')})")
+        raise ValueError(
+            f"Invoice is not in 'shared' state (current: {invoice.get('status')})"
+        )
 
     modification_id = str(uuid.uuid4())
     modification_record = {
-        "id":                 modification_id,
-        "invoice_id":         invoice_id,
-        "requested_by":        buyer_user_id,
-        "suggested_changes":   suggested_changes,
-        "reason":              reason,
-        "status":              "pending",
-        "created_at":          datetime.utcnow().isoformat(),
+        "id":               modification_id,
+        "invoice_id":       invoice_id,
+        "requested_by":     buyer_user_id,
+        "suggested_changes": suggested_changes,
+        "reason":           reason,
+        "status":           "pending",
+        "created_at":       datetime.utcnow().isoformat(),
     }
     await db_insert(MODIFICATIONS_TABLE, modification_record)
 
-    # Update invoice status to reflect that modification is requested
+    # Update invoice status to reflect modification request
     await db_update(
         TABLE,
         match={"id": invoice_id},
@@ -282,18 +349,31 @@ async def get_invoices_by_seller(seller_id: str) -> list[dict]:
 
 async def get_invoices_for_buyer(buyer_user_id: str) -> list[dict]:
     """
-    Return all invoices shared with a buyer, identified by their user_profiles.id.
-    This is derived from the JWT 'sub', not a raw GSTIN query param.
+    Return ALL invoices for a buyer (all statuses: shared, accepted, rejected, modified).
+    Identified by their user_profiles.id from the JWT 'sub'.
     """
-    return await db_select(TABLE, {"buyer_id": buyer_user_id, "status": InvoiceStatus.SHARED})
+    return await db_select(TABLE, {"buyer_id": buyer_user_id})
 
 
 async def get_invoices_for_buyer_by_gstin(buyer_gstin: str) -> list[dict]:
     """
-    Fallback: query by GSTIN when buyer_id is not yet set (e.g. before first share).
-    Returns only shared invoices.
+    Fallback: query by GSTIN when buyer_id is not yet set.
+    Returns shared + modified invoices so buyer can see pending actions.
     """
-    return await db_select(TABLE, {"buyer_gstin": buyer_gstin, "status": InvoiceStatus.SHARED})
+    client = get_supabase_admin()
+    try:
+        response = (
+            client
+            .table(TABLE)
+            .select("*")
+            .eq("buyer_gstin", buyer_gstin)
+            .in_("status", [InvoiceStatus.SHARED, InvoiceStatus.MODIFIED])
+            .execute()
+        )
+        return response.data or []
+    except Exception as e:
+        print(f"⚠️  GSTIN buyer lookup failed: {e}")
+        return []
 
 
 async def get_invoice_by_id(invoice_id: str) -> Optional[dict]:

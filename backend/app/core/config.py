@@ -28,9 +28,9 @@ class Settings(BaseSettings):
     supabase_service_role_key: str
     supabase_jwt_secret: str
 
-    # ── Gemini ───────────────────────────────────────────────
-    gemini_api_key: str
-    gemini_model: str = "gemini-1.5-pro"
+    # ── Groq ─────────────────────────────────────────────────
+    groq_api_key: str
+    groq_model: str = "llama-3.3-70b-versatile"
 
     # ── Neo4j ────────────────────────────────────────────────
     neo4j_uri: str
@@ -43,12 +43,7 @@ class Settings(BaseSettings):
     aura_instancename: Optional[str] = None
 
     # ── OCR — platform-aware paths ───────────────────────────
-    # Windows example: C:\Program Files\poppler\poppler-25.12.0\Library\bin
-    # Linux/Mac:       /usr/bin          (poppler is on PATH, leave as None)
     poppler_path: Optional[str] = None
-
-    # Windows example: C:\Program Files\Tesseract-OCR\tesseract.exe
-    # Linux/Mac:       /usr/bin/tesseract
     tesseract_cmd: str = "/usr/bin/tesseract"
 
     # ── Storage ──────────────────────────────────────────────
