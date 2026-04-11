@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/background.jpeg";
+import invoice1 from "../../assets/invoice1.jpeg";
+import invoice2 from "../../assets/invoice2.jpeg";
+import invoice3 from "../../assets/invoice3.jpeg";
+import invoice4 from "../../assets/invoice4.jpeg";
+import invoice5 from "../../assets/invoice5.jpeg";
+import invoice6 from "../../assets/invoice6.jpeg";
+import Epsilon from "../../assets/EpsilonInvoice.png";
 
 export default function CheckYourInvoice() {
   const navigate = useNavigate();
@@ -10,12 +17,12 @@ export default function CheckYourInvoice() {
   const tabs = ["All", "Pending", "Rejected", "Completed"];
 
   const invoices = [
-    { title: "Social Media Invoice", date: "19/03/2025", img: "https://placehold.co/496x372", id: 1 },
-    { title: "Google Ads Campaign Invoice", date: "09/04/2025", img: "https://placehold.co/496x372", id: 2 },
-    { title: "Shoot Invoice", date: "29/04/2025", img: "https://placehold.co/496x372", id: 3 },
-    { title: "Facebook Ads Campaign Invoice", date: "07/05/2025", img: "https://placehold.co/496x372", id: 4 },
-    { title: "SEO Optimization Invoice", date: "02/07/2025", img: "https://placehold.co/496x372", id: 5 },
-    { title: "Content Creation Invoice", date: "08/08/2025", img: "https://placehold.co/496x372", id: 6 },
+    { title: "Social Media Invoice", date: "19/03/2025", img: Epsilon, id: 1 },
+    { title: "Google Ads Campaign Invoice", date: "09/04/2025", img: invoice2, id: 2 },
+    { title: "Shoot Invoice", date: "29/04/2025", img: invoice3, id: 3 },
+    { title: "Facebook Ads Campaign Invoice", date: "07/05/2025", img: invoice4, id: 4 },
+    { title: "SEO Optimization Invoice", date: "02/07/2025", img: invoice5, id: 5 },
+    { title: "Content Creation Invoice", date: "08/08/2025", img: invoice6, id: 6 },
   ];
 
   return (

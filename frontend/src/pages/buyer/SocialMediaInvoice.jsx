@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/background.jpeg";
+import Epsilon from "../../assets/EpsilonInvoice.png";
 
 export default function SocialMediaInvoice() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function SocialMediaInvoice() {
         {/* Invoice Document Viewer Placeholder */}
         <div className="relative z-10 w-full max-w-5xl rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.15)] overflow-hidden bg-white mb-16 border border-gray-100">
           <img 
-            src="https://placehold.co/1101x1059/ffffff/dddddd?text=Invoice+Document+Preview" 
+            src={Epsilon} 
             alt="Social Media Invoice Document" 
             className="w-full h-auto object-cover" 
           />

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import Epsilon from "../../assets/EpsilonInvoice.png";
 
 export default function SentInvoices() {
   const navigate = useNavigate();
@@ -23,8 +24,12 @@ export default function SentInvoices() {
         <div className="flex flex-col items-center w-full max-w-[1101px] gap-16">
             
             {/* Invoice Document Placeholder */}
-            <div className="w-full bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden border border-gray-100 aspect-[1101/1059]">
-               <img src="https://placehold.co/1101x1059/fafafa/e5e5e5?text=Invoice+Preview" alt="Invoice Document" className="w-full h-full object-contain p-2"/>
+            <div className="w-full bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] overflow-hidden border border-gray-100 relative">
+               <img 
+                 src={Epsilon} 
+                 alt="Invoice Document" 
+                 className="w-full h-auto block p-2"
+               />
             </div>
 
             {/* Action Buttons styled according to requirements */}
