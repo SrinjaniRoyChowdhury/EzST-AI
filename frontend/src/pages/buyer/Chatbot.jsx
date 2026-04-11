@@ -1,5 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/background.jpeg";
+import bluegradient from "../../assets/bluegradient.jpeg";
+import yellowgradient from "../../assets/yellowgradient.jpeg";
+import redgradient from "../../assets/redgradient.png";
+import greengradient from "../../assets/greengradient.jpeg";
 
 export default function Chatbot() {
   const navigate = useNavigate();
@@ -42,7 +46,7 @@ export default function Chatbot() {
            
            {/* Action 1 */}
            <div className="group cursor-pointer rounded-2xl overflow-hidden relative shadow-[0_5px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 transform hover:-translate-y-2 aspect-[275/150] bg-black">
-              <img src="https://placehold.co/275x150/111111/333333?text=+" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Validate Invoice bg" />
+              <img src={bluegradient} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Validate Invoice bg" />
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <h3 className="text-white text-2xl md:text-3xl font-bold font-inter text-center leading-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
                   Validate<br/>Invoice
@@ -52,7 +56,7 @@ export default function Chatbot() {
 
            {/* Action 2 */}
            <div className="group cursor-pointer rounded-2xl overflow-hidden relative shadow-[0_5px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 transform hover:-translate-y-2 aspect-[275/150] bg-black">
-              <img src="https://placehold.co/275x150/111111/333333?text=+" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Predict Cashflow bg" />
+              <img src={yellowgradient} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Predict Cashflow bg" />
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <h3 className="text-white text-2xl md:text-3xl font-bold font-inter text-center leading-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
                   Predict<br/>Cashflow
@@ -62,7 +66,7 @@ export default function Chatbot() {
 
            {/* Action 3 */}
            <div className="group cursor-pointer rounded-2xl overflow-hidden relative shadow-[0_5px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 transform hover:-translate-y-2 aspect-[275/150] bg-black">
-              <img src="https://placehold.co/275x150/111111/333333?text=+" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Calculate GST bg" />
+              <img src={redgradient} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Calculate GST bg" />
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <h3 className="text-white text-2xl md:text-3xl font-bold font-inter text-center leading-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
                   Calculate<br/>My GST
@@ -72,7 +76,7 @@ export default function Chatbot() {
 
            {/* Action 4 */}
            <div className="group cursor-pointer rounded-2xl overflow-hidden relative shadow-[0_5px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-300 transform hover:-translate-y-2 aspect-[275/150] bg-black">
-              <img src="https://placehold.co/275x150/111111/333333?text=+" className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Simplify Invoice bg" />
+              <img src={greengradient} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" alt="Simplify Invoice bg" />
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <h3 className="text-white text-2xl md:text-3xl font-bold font-inter text-center leading-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]">
                   Simplify<br/>Invoice

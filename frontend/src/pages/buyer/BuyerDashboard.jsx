@@ -66,7 +66,7 @@ export default function BuyerDashboard() {
               amount, and payment status.
             </p>
             <button
-              onClick={() => navigate("/buyer/invoices")}
+              onClick={() => navigate("/buyer/social-media-invoice")}
               className="mt-4 bg-[#D50000] text-white px-8 py-4 rounded-xl font-bold text-lg hover:bg-red-700 hover:shadow-lg transition-all active:scale-95"
             >
               Check All Your Invoices
@@ -79,12 +79,14 @@ export default function BuyerDashboard() {
             <div className="flex flex-col gap-6 md:gap-8 flex-1">
               <img
                 src={invoice1}
-                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390]"
+                onClick={() => navigate("/buyer/social-media-invoice")}
+                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390] cursor-pointer hover:opacity-95 transition-opacity"
                 alt="Invoice 1"
               />
               <img
                 src={invoice6}
-                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390]"
+                onClick={() => navigate("/buyer/social-media-invoice")}
+                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390] cursor-pointer hover:opacity-95 transition-opacity"
                 alt="Invoice Placeholder 2"
               />
             </div>
@@ -92,12 +94,14 @@ export default function BuyerDashboard() {
             <div className="flex flex-col gap-6 md:gap-8 flex-1 mt-16 md:mt-24">
               <img
                 src={invoice3}
-                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390]"
+                onClick={() => navigate("/buyer/social-media-invoice")}
+                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390] cursor-pointer hover:opacity-95 transition-opacity"
                 alt="Invoice Placeholder 3"
               />
               <img
                 src={invoice4}
-                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390]"
+                onClick={() => navigate("/buyer/social-media-invoice")}
+                className="w-full rounded-2xl shadow-[0_4px_4px_rgba(0,0,0,0.25)] object-cover aspect-[504/390] cursor-pointer hover:opacity-95 transition-opacity"
                 alt="Invoice Placeholder 4"
               />
             </div>
