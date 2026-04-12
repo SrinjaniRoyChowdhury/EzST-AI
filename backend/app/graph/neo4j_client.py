@@ -20,7 +20,7 @@ def get_driver() -> AsyncDriver:
     """Return a cached async Neo4j driver instance."""
     return AsyncGraphDatabase.driver(
         settings.neo4j_uri,
-        auth=(settings.neo4j_user, settings.neo4j_password),
+        auth=(settings.neo4j_username, settings.neo4j_password),
         max_connection_pool_size=50,
     )
 
@@ -35,7 +35,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             result = await session.run("MATCH (n) RETURN n LIMIT 5")
     """
     driver = get_driver()
-    async with driver.session(database="neo4j") as session:
+    async with driver.session(database=settings.neo4j_database) as session:
         yield session
 
 

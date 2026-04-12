@@ -53,10 +53,12 @@ async def process_invoice_upload(
     ocr_extracted = bool(raw_text)
 
     # 3. MOCK AI-powered structured extraction (skipping LLM)
+    import random
+    _amounts = [84500.0, 213750.0, 56320.0, 138900.0, 320000.0, 97450.0, 178600.0, 445000.0]
     extracted_data = {
         "invoice_number": f"INV-{uuid.uuid4().hex[:6].upper()}",
         "invoice_date": datetime.utcnow().strftime('%Y-%m-%d'),
-        "grand_total": 1050.0,
+        "grand_total": random.choice(_amounts),
         "seller_gstin": "22AAAAA0000A1Z5", # Must be exactly 15 chars
         "seller_name": "Mock Seller Inc.",
         "buyer_gstin": (buyer_gstin[:15] if buyer_gstin else "33BBBBB1111B1Z5"),

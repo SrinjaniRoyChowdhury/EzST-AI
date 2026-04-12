@@ -130,26 +130,20 @@ async def gst_dashboard(gstin: str, period: str, current_user: CurrentUser = Non
 
 # ── GST AI Chatbot ────────────────────────────────────────────
 
-@router.post("/chat", response_model=GSTChatResponse)
+@router.post("/chat")
 async def gst_chat(
     payload: GSTChatRequest,
     current_user: CurrentUser = None,
 ):
     """
-    RAG-powered GST compliance chatbot.
-    Supports multi-turn conversations via session_id.
+    RAG-powered GST chatbot using Neo4j knowledge graph + Groq LLM.
     """
-    user_gstin = current_user.get("user_metadata", {}).get("gstin")
-    result = await _gst_agent.chat(
-        question=payload.question,
-        session_id=payload.session_id,
-        user_gstin=user_gstin,
-    )
-    return GSTChatResponse(
-        answer=result["answer"],
-        sources=result["sources"],
-        session_id=result["session_id"],
-    )
+    from app.services.chatbot_service import chat_with_groq
+    try:
+        answer = await chat_with_groq(payload.question)
+        return {"answer": answer, "sources": [], "session_id": payload.session_id or "default"}
+    except Exception as e:
+        return {"answer": f"Sorry, I encountered an error: {str(e)}", "sources": [], "session_id": "default"}
 
 
 # ── Risk Analysis ─────────────────────────────────────────────

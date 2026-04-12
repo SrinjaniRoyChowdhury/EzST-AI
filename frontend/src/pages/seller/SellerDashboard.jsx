@@ -1,9 +1,35 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bgImage from "../../assets/background.jpeg";
 import whitebgImage from "../../assets/whitebackground.jpeg";
 
 export default function SellerDashboard() {
   const navigate = useNavigate();
+  const [latestInvoice, setLatestInvoice] = useState(null);
+  const [latestAccepted, setLatestAccepted] = useState(null);
+  const [latestRejected, setLatestRejected] = useState(null);
+
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/invoices/seller/my-invoices");
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        
+        // Sort latest first by date
+        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        if (data.length > 0) {
+          setLatestInvoice(data[0]);
+          setLatestAccepted(data.find(inv => (inv.status || "").toLowerCase() === 'accepted'));
+          setLatestRejected(data.find(inv => (inv.status || "").toLowerCase() === 'rejected' || (inv.status || "").toLowerCase() === 'modified'));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchInvoices();
+  }, []);
 
   return (
     <div className="w-full min-h-screen bg-white font-sans overflow-x-hidden flex flex-col items-center">
@@ -43,13 +69,24 @@ export default function SellerDashboard() {
       </div>
 
       {/* Overlapping Image using negative margin to keep document flow responsive */}
-      <div className="w-full px-4 sm:px-8 md:px-12 flex justify-center -mt-40 md:-mt-48 mb-24 z-20 relative">
-         <div className="w-full max-w-6xl rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border-[2px] border-[#D50000] shadow-[0_8px_30px_rgba(0,0,0,0.12),0_0_10px_rgba(0,0,0,0.06)] bg-white aspect-[1154/751] group">
-            <img 
-              src="https://placehold.co/1154x751/fcfcfc/dddddd?text=Seller+Dashboard+Interface" 
-              alt="Seller Dashboard" 
-              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500 ease-out" 
-            />
+      <div 
+        className="w-full px-4 sm:px-8 md:px-12 flex justify-center -mt-40 md:-mt-48 mb-24 z-20 relative cursor-pointer"
+        onClick={() => latestInvoice && navigate("/seller/invoices")}
+      >
+         <div className="w-full max-w-6xl rounded-[1.5rem] md:rounded-[2rem] overflow-hidden border-[2px] border-[#D50000] shadow-[0_8px_30px_rgba(0,0,0,0.12),0_0_10px_rgba(0,0,0,0.06)] bg-white aspect-[1154/751] group relative">
+            {latestInvoice && latestInvoice.file_url ? (
+               <embed 
+                 src={`http://localhost:8000/uploads/${latestInvoice.file_url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} 
+                 type="application/pdf"
+                 className="w-full h-full pointer-events-none" 
+               />
+            ) : (
+               <img 
+                 src="https://placehold.co/1154x751/fcfcfc/dddddd?text=Seller+Dashboard+Interface" 
+                 alt="Seller Dashboard" 
+                 className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500 ease-out" 
+               />
+            )}
          </div>
       </div>
 
@@ -63,9 +100,13 @@ export default function SellerDashboard() {
       {/* Accepted & Rejected Cards */}
       <div className="max-w-6xl w-full px-6 flex flex-col md:flex-row justify-center gap-12 mb-32 z-10 relative">
         {/* Accepted Card */}
-        <div className="flex-1 flex flex-col gap-6 max-w-sm w-full mx-auto group">
+        <div className="flex-1 flex flex-col gap-6 max-w-sm w-full mx-auto group cursor-pointer" onClick={() => navigate("/seller/invoices")}>
             <div className="w-full aspect-[388/236] rounded-2xl overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.1)] border-[2px] border-transparent group-hover:border-green-400 transition-colors duration-300">
-                <img src="https://placehold.co/388x236/f0fdf4/bbf7d0?text=Accepted+Docs" alt="Accepted" className="w-full h-full object-cover"/>
+                {latestAccepted && latestAccepted.file_url ? (
+                   <embed src={`http://localhost:8000/uploads/${latestAccepted.file_url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} type="application/pdf" className="w-full h-full object-cover pointer-events-none bg-white"/>
+                ) : (
+                   <img src="https://placehold.co/388x236/f0fdf4/bbf7d0?text=Accepted+Docs" alt="Accepted" className="w-full h-full object-cover"/>
+                )}
             </div>
             <div className="flex flex-col gap-2 text-center md:text-left">
                 <h3 className="text-[#D50000] text-2xl font-bold font-inter">Accepted Invoices</h3>
@@ -76,9 +117,13 @@ export default function SellerDashboard() {
         </div>
 
         {/* Rejected Card */}
-        <div className="flex-1 flex flex-col gap-6 max-w-sm w-full mx-auto group">
+        <div className="flex-1 flex flex-col gap-6 max-w-sm w-full mx-auto group cursor-pointer" onClick={() => navigate("/seller/invoices")}>
             <div className="w-full aspect-[394/234] rounded-2xl overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.1)] border-[2px] border-transparent group-hover:border-red-400 transition-colors duration-300">
-                <img src="https://placehold.co/394x234/fef2f2/fecaca?text=Rejected+Docs" alt="Rejected" className="w-full h-full object-cover"/>
+                {latestRejected && latestRejected.file_url ? (
+                   <embed src={`http://localhost:8000/uploads/${latestRejected.file_url}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`} type="application/pdf" className="w-full h-full object-cover pointer-events-none bg-white"/>
+                ) : (
+                   <img src="https://placehold.co/394x234/fef2f2/fecaca?text=Rejected+Docs" alt="Rejected" className="w-full h-full object-cover"/>
+                )}
             </div>
             <div className="flex flex-col gap-2 text-center md:text-left">
                 <h3 className="text-[#D50000] text-2xl font-bold font-inter">Rejected Invoices</h3>
