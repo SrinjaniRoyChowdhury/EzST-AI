@@ -7,7 +7,27 @@ GST return generation, fraud detection, and an AI-powered GST chatbot.
 
 ## 🏗️ Architecture
 
-```
+```text
+frontend/
+├── public/                ← Static assets (logos, icons)
+├── src/
+│   ├── assets/            ← Images and local assets
+│   ├── components/        ← Reusable UI components (Navbar, Sidebar, Cards)
+│   ├── context/           ← Global state context (e.g., AuthContext)
+│   ├── hooks/             ← Custom React hooks (e.g., useAuth)
+│   ├── pages/
+│   │   ├── auth/          ← Authentication views (SignIn, Register)
+│   │   ├── buyer/         ← Buyer portal (Dashboard, Invoice upload, Chatbot)
+│   │   ├── seller/        ← Seller portal (Dashboard, Invoice generate, GST Returns)
+│   │   └── shared/        ← Shared views (Notifications)
+│   ├── routes/            ← React Router config (AppRoutes, BuyerRoutes, SellerRoutes)
+│   ├── services/          ← Axios API clients (connection to FastAPI)
+│   ├── App.jsx            ← Root React component
+│   └── main.jsx           ← Application entry point
+├── package.json           ← Node dependencies and scripts
+├── tailwind.config.js     ← TailwindCSS styling configuration
+└── vite.config.js         ← Vite bundler configuration
+
 backend/
 ├── app/
 │   ├── main.py                    ← FastAPI app entry point + lifespan
@@ -65,6 +85,10 @@ backend/
 
 | Layer | Technology |
 |---|---|
+| Frontend Framework | React 19 (Vite) |
+| Frontend Styling | TailwindCSS + Custom Components |
+| Frontend Routing | React Router DOM v7 |
+| API Connection | Axios |
 | API Framework | FastAPI (Python 3.11+) |
 | Database | Supabase (PostgreSQL + Auth) |
 | Graph DB | Neo4j 5.x |
@@ -90,11 +114,19 @@ brew install tesseract poppler
 ```
 
 ### 2. Clone & Install
+
+**Backend:**
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm install
 ```
 
 ### 3. Environment Variables
@@ -121,12 +153,21 @@ docker run \
   neo4j:5
 ```
 
-### 6. Run the API
+### 6. Run the Application
+
+**Run Backend:**
 ```bash
+cd backend
 uvicorn app.main:app --reload --port 8000
 ```
-
 API Docs: http://localhost:8000/docs
+
+**Run Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+Frontend App: http://localhost:5173
 
 ---
 
