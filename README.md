@@ -5,7 +5,7 @@ GST return generation, fraud detection, and an AI-powered GST chatbot.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Repository Architecture
 
 ```text
 frontend/
